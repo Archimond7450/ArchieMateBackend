@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+
+<configuration>
+    <import class="ch.qos.logback.core.ConsoleAppender"/>
+    <import class="ch.qos.logback.classic.filter.ThresholdFilter"/>
+    <import class="ch.qos.logback.core.rolling.RollingFileAppender"/>
+    <import class="ch.qos.logback.core.filter.EvaluatorFilter"/>
+    <import class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy"/>
+
+    <property name="LOG_DIR" value="logs" />
+
+    <!-- Console appender for debugging -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+        <encoder>
+            <pattern>[%date{ISO8601}] [%-5level] [%logger] [%marker] [%thread] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Default file appender with filter of other logs -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/ArchieMate.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/ArchieMate-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>365</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%date{ISO8601}] [%-5level] [%logger] [%marker] [%thread] - %msg | MDC: {%mdc}%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator>
+                <expression>return mdc == null || mdc.get("akkaSource") == null || !((String)mdc.get("akkaSource")).startsWith("akka://ArchieMate/user/twitchChatbotsSupervisor") || !((String)mdc.get("akkaSource")).startsWith("akka://ArchieMate/user/twitchApiClient");</expression>
+            </evaluator>
+            <OnMismatch>DENY</OnMismatch>
+            <OnMatch>NEUTRAL</OnMatch>
+        </filter>
+    </appender>
+
+    <!-- Twitch IRC file appender with akkaSource twitchChatbotSupervisor* filter -->
+    <appender name="TWITCH_IRC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/Twitch_IRC.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/Twitch_IRC-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>365</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%date{ISO8601}] [%-5level] [%logger] [%marker] [%thread] - %msg | MDC: {%mdc}%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator>
+                <expression>return mdc != null &amp;&amp; mdc.get("akkaSource") != null &amp;&amp; ((String)mdc.get("akkaSource")).startsWith("akka://ArchieMate/user/twitchChatbotsSupervisor");</expression>
+            </evaluator>
+            <OnMismatch>DENY</OnMismatch>
+            <OnMatch>NEUTRAL</OnMatch>
+        </filter>
+    </appender>
+
+    <!-- HTTP Client file appender with MDC filter -->
+    <appender name="HTTP_CLIENT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/HTTP_Client.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/HTTP_Client-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>365</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%date{ISO8601}] [%-5level] [%logger] [%marker] [%thread] - %msg | MDC: {%mdc}%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator>
+                <expression>return mdc != null &amp;&amp; mdc.get("akkaSource") != null &amp;&amp; ((String)mdc.get("akkaSource")).startsWith("akka://ArchieMate/user/twitchApiClient");</expression>
+            </evaluator>
+            <OnMismatch>DENY</OnMismatch>
+            <OnMatch>NEUTRAL</OnMatch>
+        </filter>
+    </appender>
+
+    <!-- Root logger configuration -->
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="TWITCH_IRC"/>
+        <appender-ref ref="HTTP_CLIENT"/>
+    </root>
+</configuration>
