@@ -69,7 +69,10 @@ class EventSubListener(private val uri: String, private val channelName: String,
 
     case eventsub.IncomingMessage(metadata, eventsub.Payload(Some(session), _, _)) if metadata.messageType == "session_welcome" =>
       become(requesting(webSocketClient), requestingState)
-      requestEvents(session.id).onComplete(_ => become(operational(webSocketClient), operationalState))
+      requestEvents(session.id).onComplete(_ => {
+        become(operational(webSocketClient), operationalState)
+        unstashAll()
+      })
 
     case msg: eventsub.IncomingMessage => ignoreMessage(msg, connectedState)
 
