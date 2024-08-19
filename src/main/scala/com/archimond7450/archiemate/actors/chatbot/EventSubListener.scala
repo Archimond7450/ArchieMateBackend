@@ -1,7 +1,7 @@
 package com.archimond7450.archiemate.actors.chatbot
 
 import akka.Done
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props, Stash}
 import akka.http.scaladsl.model.ws.TextMessage
 import akka.pattern.ask
 import akka.util.Timeout
@@ -18,7 +18,7 @@ import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
-class EventSubListener(private val uri: String, private val channelName: String, private val twitchChatbot: ActorRef, private val twitchApiClient: ActorRef, private val twitchUserSessionsRepository: ActorRef, private implicit val timeout: Timeout) extends Actor with ActorLogging with eventsub.EventSubDecodersAndEncoders {
+class EventSubListener(private val uri: String, private val channelName: String, private val twitchChatbot: ActorRef, private val twitchApiClient: ActorRef, private val twitchUserSessionsRepository: ActorRef, private implicit val timeout: Timeout) extends Actor with ActorLogging with Stash with eventsub.EventSubDecodersAndEncoders {
   import EventSubListener._
   implicit val system: ActorSystem = context.system
   implicit val dispatcher: ExecutionContextExecutor = system.dispatcher
@@ -68,6 +68,7 @@ class EventSubListener(private val uri: String, private val channelName: String,
     case TextMessage.Strict(msg) => decodeAndProcess(msg)
 
     case eventsub.IncomingMessage(metadata, eventsub.Payload(Some(session), _, _)) if metadata.messageType == "session_welcome" =>
+      become(requesting(webSocketClient), requestingState)
       requestEvents(session.id).onComplete(_ => become(operational(webSocketClient), operationalState))
 
     case msg: eventsub.IncomingMessage => ignoreMessage(msg, connectedState)
@@ -77,6 +78,11 @@ class EventSubListener(private val uri: String, private val channelName: String,
       self ! Reconnect
 
     case msg => ignoreMessage(msg, connectedState)
+  }
+
+  private val requestingState = "requesting"
+  private def requesting(webSocketClient: ActorRef): Receive = {
+    case msg => stash()
   }
 
   private val operationalState = "operational"
