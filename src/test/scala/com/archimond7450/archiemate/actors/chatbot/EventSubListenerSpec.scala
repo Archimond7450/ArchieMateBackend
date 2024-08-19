@@ -120,7 +120,6 @@ class EventSubListenerSpec extends TestKit(ActorSystem("EventSubListenerSpec", C
         twitchApiClient,
         tokenId,
         sessionId,
-        roomId,
         subscriptions)
 
       for {
@@ -168,7 +167,7 @@ class EventSubListenerSpec extends TestKit(ActorSystem("EventSubListenerSpec", C
 
   case class SubParam(subType: String, subVersion: String, condition: Condition)
 
-  def expectSubs(twitchApiClient: TestProbe, tokenId: String, sessionId: String, roomId: String, subs: List[SubParam]): Unit = {
+  def expectSubs(twitchApiClient: TestProbe, tokenId: String, sessionId: String, subs: List[SubParam]): Unit = {
     subs.foreach { _ =>
       val eventSubRequest = twitchApiClient.expectMsgType[TwitchApiClient.DomainModel.CreateEventSubWebsocketSubscription]
       eventSubRequest match {
