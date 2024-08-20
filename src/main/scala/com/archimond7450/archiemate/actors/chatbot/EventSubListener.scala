@@ -68,7 +68,7 @@ class EventSubListener(private val uri: String, private val channelName: String,
     case TextMessage.Strict(msg) => decodeAndProcess(msg)
 
     case eventsub.IncomingMessage(metadata, eventsub.Payload(Some(session), _, _)) if metadata.messageType == "session_welcome" =>
-      become(requesting(webSocketClient), requestingState)
+      become(requesting, requestingState)
       requestEvents(session.id).onComplete(_ => {
         become(operational(webSocketClient), operationalState)
         unstashAll()
@@ -84,7 +84,7 @@ class EventSubListener(private val uri: String, private val channelName: String,
   }
 
   private val requestingState = "requesting"
-  private def requesting(webSocketClient: ActorRef): Receive = {
+  private def requesting: Receive = {
     case msg => stash()
   }
 

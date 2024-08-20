@@ -122,6 +122,8 @@ class EventSubListenerSpec extends TestKit(ActorSystem("EventSubListenerSpec", C
         sessionId,
         subscriptions)
 
+      Thread.sleep((3 second).toMillis)
+
       for {
         subParam <- subscriptions.slice(0, 3)
       } yield {
