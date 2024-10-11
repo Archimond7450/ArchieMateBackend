@@ -59,7 +59,12 @@ class WebSocketClient(private val uri: String, private val subscriber: ActorRef)
           log.debug("Received strict text message")
           subscriber ! txt
         case txt: TextMessage.Streamed =>
-          log.debug("Received streamed text message")
+          txt.textStream.runFold("") {(acc, str) => acc ++ str}.onComplete {
+            case Success(message) =>
+              log.debug("Received streamed message of length {}", message.length)
+              subscriber ! TextMessage.Strict(message)
+            case Failure(ex) => log.error(ex, "Error while processing streamed message")
+          }
           subscriber ! TextMessage.Strict(txt.getStrictText)
         case bin: BinaryMessage.Strict =>
           log.debug("Received strict binary message")
