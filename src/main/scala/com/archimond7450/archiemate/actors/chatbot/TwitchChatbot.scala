@@ -34,7 +34,7 @@ class TwitchChatbot(private val conf: ApplicationConf, private val channelName: 
     super.preStart()
     context.become(initialize(context.actorOf(
       WebSocketClient.props(
-        "ws://irc-ws.chat.twitch.tv",
+        "wss://irc-ws.chat.twitch.tv",
         self
       ),
       "webSocket"
